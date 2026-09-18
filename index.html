@@ -253,6 +253,24 @@ footer .f-by{letter-spacing:.1em}
   .cap,.stage .poster,.hint,.loading,.rv,.shot img{transition:none}
   .rv{opacity:1;transform:none}
 }
+
+/* ---------- PHONE ONLY: film windows instead of a hard crop (additive) ---------- */
+@media (max-width:820px){
+  .stage .pbg{position:absolute;inset:-9%;width:118%;height:118%;z-index:0;
+    filter:blur(42px) saturate(1.06) brightness(.62)}
+  .stage .pveil{position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(120% 70% at 50% 45%,rgba(14,13,12,0) 36%,rgba(14,13,12,.5) 100%)}
+  .stage video,.stage .poster{top:50%;bottom:auto;height:var(--winh,46vh);transform:translateY(-50%);
+    transition:height .55s cubic-bezier(.16,.84,.34,1),top .55s cubic-bezier(.16,.84,.34,1),transform .55s cubic-bezier(.16,.84,.34,1)}
+  /* at the very end of the tour the view fills the screen again, so the lead form sits on it */
+  .stage.pfull video,.stage.pfull .poster{top:0;height:100%;transform:none}
+  .stage.pfull .pbg,.stage.pfull .pveil{opacity:0;transition:opacity .55s ease}
+  #hero .stage{--winh:44vh}
+  #tour .stage{--winh:56vh}
+  .stage:after{background:linear-gradient(to bottom,
+      rgba(14,13,12,.3) 0%,rgba(14,13,12,0) 26%,rgba(14,13,12,0) 62%,rgba(14,13,12,.72) 100%)}
+  .cap{bottom:11vh}
+}
 </style>
 </head>
 <body>
@@ -684,6 +702,36 @@ footer .f-by{letter-spacing:.1em}
     form.insertAdjacentElement('afterend', d);
     d.scrollIntoView({block:'center', behavior:'smooth'});
   });
+})();
+</script>
+
+<script>
+/* PHONE ONLY: paint a blurred copy of the current film frame behind the window. */
+(function(){
+  if(!window.matchMedia || !matchMedia('(max-width:820px)').matches) return;
+  var pairs=[];
+  [].forEach.call(document.querySelectorAll('.stage'),function(st){
+    var v=st.querySelector('video'); if(!v) return;
+    var c=document.createElement('canvas'); c.className='pbg'; c.width=64; c.height=36;
+    var veil=document.createElement('div'); veil.className='pveil';
+    st.insertBefore(veil,st.firstChild); st.insertBefore(c,st.firstChild);
+    pairs.push({v:v,cx:c.getContext('2d')});
+  });
+  if(!pairs.length) return;
+  var lead=document.getElementById('leadWrap');
+  var leadStage=lead && lead.parentNode && lead.parentNode.classList.contains('stage') ? lead.parentNode : null;
+  var wasOn=null;
+  (function draw(){
+    for(var i=0;i<pairs.length;i++){
+      var p=pairs[i];
+      if(p.v.readyState>=2){ try{ p.cx.drawImage(p.v,0,0,64,36); }catch(e){} }
+    }
+    if(leadStage){
+      var on=lead.classList.contains('on');
+      if(on!==wasOn){ wasOn=on; leadStage.classList.toggle('pfull',on); }
+    }
+    requestAnimationFrame(draw);
+  })();
 })();
 </script>
 </body>
